@@ -1,9 +1,4 @@
-import { useState } from 'react';
-
-export default function Checklist({ items }) {
-  const [checked, setChecked] = useState({});
-
-  const toggle = (i) => setChecked(prev => ({ ...prev, [i]: !prev[i] }));
+export default function Checklist({ items, checked, onToggle }) {
   const allDone = items.every((_, i) => checked[i]);
 
   return (
@@ -13,7 +8,7 @@ export default function Checklist({ items }) {
         {items.map((item, i) => (
           <button
             key={i}
-            onClick={() => toggle(i)}
+            onClick={() => onToggle(i)}
             className="w-full flex items-start gap-3 text-left group"
           >
             <div className={`w-5 h-5 rounded border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-all ${

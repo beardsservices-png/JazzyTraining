@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { phases } from '../data/curriculum';
-import { useProgress } from '../hooks/useProgress';
+import { useProgress, useChecklistProgress, useModuleNotes } from '../hooks/useProgress';
 import ContentBlock from '../components/ContentBlock';
 import Checklist from '../components/Checklist';
 
 export default function ModuleView() {
   const { moduleId } = useParams();
   const navigate = useNavigate();
-  const { markComplete, isComplete } = useProgress();
+  const { markComplete, unmarkComplete, isComplete } = useProgress();
+  const { checked, toggle } = useChecklistProgress(moduleId);
+  const { notes, saveNotes } = useModuleNotes(moduleId);
   const [justCompleted, setJustCompleted] = useState(false);
 
   let foundModule = null;
@@ -26,8 +28,12 @@ export default function ModuleView() {
   );
 
   const complete = isComplete(moduleId);
+  const hasChecklist = foundModule.checklist && foundModule.checklist.length > 0;
+  const checkedCount = hasChecklist ? foundModule.checklist.filter((_, i) => checked[i]).length : 0;
+  const allChecked = !hasChecklist || checkedCount === foundModule.checklist.length;
 
   const handleMarkComplete = () => {
+    if (!allChecked) return;
     markComplete(moduleId);
     setJustCompleted(true);
     setTimeout(() => {
@@ -68,24 +74,51 @@ export default function ModuleView() {
         ))}
       </div>
 
-      {foundModule.checklist && foundModule.checklist.length > 0 && (
-        <Checklist items={foundModule.checklist} />
+      <div>
+        <div className="font-display font-semibold text-sm text-slate-700 mb-2">Your Notes</div>
+        <textarea
+          value={notes}
+          onChange={e => saveNotes(e.target.value)}
+          placeholder="Jot down anything you want to remember from this module..."
+          className="w-full min-h-[80px] text-sm font-body text-slate-700 bg-white border border-slate-200 rounded-xl p-3 resize-none focus:outline-none focus:border-teal-400 placeholder:text-slate-300"
+        />
+      </div>
+
+      {hasChecklist && (
+        <Checklist items={foundModule.checklist} checked={checked} onToggle={toggle} />
       )}
 
       {!complete ? (
-        <button
-          onClick={handleMarkComplete}
-          className={`w-full py-4 rounded-xl font-display font-bold text-white text-base transition-all ${
-            justCompleted
-              ? 'bg-green-500 complete-pulse'
-              : 'bg-teal-600 hover:bg-teal-700 active:scale-95'
-          }`}
-        >
-          {justCompleted ? '✓ Marked Complete!' : 'Mark This Complete →'}
-        </button>
+        <div className="space-y-2">
+          <button
+            onClick={handleMarkComplete}
+            disabled={!allChecked}
+            className={`w-full py-4 rounded-xl font-display font-bold text-base transition-all ${
+              justCompleted
+                ? 'bg-green-500 text-white complete-pulse'
+                : allChecked
+                ? 'bg-teal-600 hover:bg-teal-700 active:scale-95 text-white'
+                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+            }`}
+          >
+            {justCompleted
+              ? '✓ Marked Complete!'
+              : allChecked
+              ? 'Mark This Complete →'
+              : `Check all items above first (${checkedCount}/${foundModule.checklist.length} done)`}
+          </button>
+        </div>
       ) : (
-        <div className="w-full py-4 rounded-xl bg-green-50 border border-green-200 text-center">
-          <div className="font-display font-semibold text-green-700 text-sm">✓ Completed</div>
+        <div className="space-y-2">
+          <div className="w-full py-4 rounded-xl bg-green-50 border border-green-200 text-center">
+            <div className="font-display font-semibold text-green-700 text-sm">✓ Completed</div>
+          </div>
+          <button
+            onClick={() => unmarkComplete(moduleId)}
+            className="w-full text-center text-xs text-slate-400 font-body hover:text-slate-600 py-1 transition-colors"
+          >
+            Mark as incomplete
+          </button>
         </div>
       )}
 

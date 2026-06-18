@@ -1,7 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const PROGRESS_KEY = 'jazzy_bhs_progress';
-const SIM_KEY = 'jazzy_sim_step';
 
 function loadProgress() {
   try {
@@ -24,6 +23,14 @@ export function useProgress() {
     });
   }, []);
 
+  const unmarkComplete = useCallback((moduleId) => {
+    setProgress(prev => {
+      const next = { ...prev, completedModules: prev.completedModules.filter(id => id !== moduleId) };
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const isComplete = useCallback((moduleId) => {
     return progress.completedModules.includes(moduleId);
   }, [progress]);
@@ -40,23 +47,63 @@ export function useProgress() {
     return { done, total, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
   }, [progress]);
 
-  return { progress, markComplete, isComplete, getPhaseProgress, getOverallProgress };
+  return { progress, markComplete, unmarkComplete, isComplete, getPhaseProgress, getOverallProgress };
 }
 
-export function useSimProgress() {
-  const [step, setStep] = useState(() => {
-    try { return parseInt(localStorage.getItem(SIM_KEY) || '0', 10); } catch { return 0; }
+export function useChecklistProgress(moduleId) {
+  const key = `jazzy_checklist_${moduleId}`;
+  const [checked, setChecked] = useState(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
   });
+
+  const toggle = useCallback((i) => {
+    setChecked(prev => {
+      const next = { ...prev, [i]: !prev[i] };
+      localStorage.setItem(key, JSON.stringify(next));
+      return next;
+    });
+  }, [key]);
+
+  return { checked, toggle };
+}
+
+export function useModuleNotes(moduleId) {
+  const key = `jazzy_notes_${moduleId}`;
+  const [notes, setNotes] = useState(() => {
+    try { return localStorage.getItem(key) || ''; } catch { return ''; }
+  });
+
+  const saveNotes = useCallback((text) => {
+    setNotes(text);
+    localStorage.setItem(key, text);
+  }, [key]);
+
+  return { notes, saveNotes };
+}
+
+export function useSimProgress(scenarioId) {
+  const key = `jazzy_sim_${scenarioId}`;
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    try {
+      const stored = parseInt(localStorage.getItem(key) || '0', 10);
+      setStep(stored);
+    } catch { setStep(0); }
+  }, [key]);
 
   const advanceStep = useCallback((nextStep) => {
     setStep(nextStep);
-    localStorage.setItem(SIM_KEY, String(nextStep));
-  }, []);
+    if (scenarioId) localStorage.setItem(key, String(nextStep));
+  }, [key, scenarioId]);
 
   const resetSim = useCallback(() => {
     setStep(0);
-    localStorage.removeItem(SIM_KEY);
-  }, []);
+    if (scenarioId) localStorage.removeItem(key);
+  }, [key, scenarioId]);
 
   return { step, advanceStep, resetSim };
 }

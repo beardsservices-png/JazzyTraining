@@ -1,6 +1,72 @@
 import { useState } from 'react';
-import { simulationSteps } from '../data/simulation';
+import { scenarios } from '../data/simulation';
 import { useSimProgress } from '../hooks/useProgress';
+
+// ─── Scenario Selector ────────────────────────────────────────────────────────
+
+function getScenarioStatus(scenarioId, totalSteps) {
+  try {
+    const step = parseInt(localStorage.getItem(`jazzy_sim_${scenarioId}`) || '0', 10);
+    if (step >= totalSteps) return 'complete';
+    if (step > 0) return 'in-progress';
+    return 'not-started';
+  } catch { return 'not-started'; }
+}
+
+function ScenarioSelector({ onSelect }) {
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="font-display font-bold text-xl text-slate-800">The Simulation</h1>
+        <p className="text-sm text-slate-500 font-body mt-1">Choose a scenario to practice the full job lifecycle — from first call to five-star review.</p>
+      </div>
+      <div className="space-y-3">
+        {scenarios.map(scenario => {
+          const status = getScenarioStatus(scenario.id, scenario.steps.length);
+          return (
+            <button
+              key={scenario.id}
+              onClick={() => onSelect(scenario.id)}
+              className="w-full text-left bg-white rounded-2xl border border-slate-100 p-5 hover:border-teal-200 hover:shadow-md transition-all active:scale-95"
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-xl"
+                  style={{ backgroundColor: scenario.color + '18' }}
+                >
+                  {scenario.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className="text-xs font-display font-semibold px-2 py-0.5 rounded-full text-white"
+                      style={{ backgroundColor: scenario.color }}
+                    >
+                      {scenario.tag}
+                    </span>
+                    {status === 'complete' && (
+                      <span className="text-xs text-green-600 font-body font-semibold">✓ Complete</span>
+                    )}
+                    {status === 'in-progress' && (
+                      <span className="text-xs text-teal-600 font-body font-semibold">In progress</span>
+                    )}
+                  </div>
+                  <div className="font-display font-bold text-slate-800 text-base mt-1 leading-tight">{scenario.title}</div>
+                  <div className="text-xs text-slate-400 font-body mt-0.5">{scenario.service} · {scenario.steps.length} steps</div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-slate-300 flex-shrink-0">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                </svg>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Mock UI Components ───────────────────────────────────────────────────────
 
 function PhoneCallUI({ step, revealed, onReveal }) {
   const [idx, setIdx] = useState(0);
@@ -72,6 +138,87 @@ function LeadsInboxUI({ step, revealed, onReveal }) {
   );
 }
 
+function LiveCallUI({ step, revealed, onReveal }) {
+  const [callDone, setCallDone] = useState(false);
+  const [form, setForm] = useState(() => Object.fromEntries(step.callbackFields.map(f => [f.key, ''])));
+  const allFilled = step.callbackFields.every(f => form[f.key].trim().length > 0);
+
+  const setField = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+
+  return (
+    <div className="space-y-3 font-body">
+      <div className="bg-slate-900 rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          <span className="text-slate-300 text-xs font-display font-semibold">Your Role — Play the Customer</span>
+        </div>
+        <div className="bg-slate-800 rounded-lg p-3 text-slate-200 text-sm leading-relaxed italic">
+          {step.customerScript}
+        </div>
+        <p className="text-slate-400 text-xs mt-3 leading-relaxed">Call the BHS number. Bill will answer. Use the script above — you're the customer. Bill will collect your name, number, and service. When the call ends, come back here and log what Bill collected.</p>
+        {!callDone && (
+          <button
+            onClick={() => setCallDone(true)}
+            className="mt-3 w-full bg-teal-600 hover:bg-teal-700 text-white rounded-lg py-2 text-xs font-display font-semibold transition-colors"
+          >
+            📞 I made the call — now log the lead
+          </button>
+        )}
+      </div>
+
+      {callDone && (
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div className="bg-violet-600 text-white px-4 py-2 text-xs font-display font-semibold">Log the Lead — Fill in What Bill Collected</div>
+          <div className="p-4 space-y-3">
+            {step.callbackFields.map(field => (
+              <div key={field.key}>
+                <label className="text-xs text-slate-500 font-display font-semibold block mb-1">{field.label}</label>
+                <input
+                  type="text"
+                  value={form[field.key]}
+                  onChange={e => setField(field.key, e.target.value)}
+                  placeholder={field.placeholder}
+                  className="w-full text-sm font-body text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 placeholder:text-slate-300"
+                />
+              </div>
+            ))}
+            {allFilled && !revealed && (
+              <button
+                onClick={onReveal}
+                className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-2 text-sm font-display font-semibold transition-colors mt-1"
+              >
+                {step.actionLabel}
+              </button>
+            )}
+            {!allFilled && (
+              <p className="text-xs text-slate-400 text-center font-body">Fill in all fields to continue</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RealStepUI({ step, revealed, onReveal }) {
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden font-body">
+      <div className="bg-teal-600 text-white px-4 py-2 text-xs font-display font-semibold">🏗️ Action Required — BHS App</div>
+      <div className="p-4 space-y-3">
+        <p className="text-sm text-slate-700 leading-relaxed">{step.instruction}</p>
+        {!revealed && (
+          <button
+            onClick={onReveal}
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-lg py-2 text-sm font-display font-semibold transition-colors"
+          >
+            {step.actionLabel}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function InfoChecklistUI({ step, revealed, onReveal }) {
   const [checked, setChecked] = useState({});
   const toggle = i => setChecked(p => ({ ...p, [i]: !p[i] }));
@@ -104,15 +251,44 @@ function InfoChecklistUI({ step, revealed, onReveal }) {
 }
 
 function TextDraftUI({ step, revealed, onReveal }) {
+  const [userText, setUserText] = useState('');
+  const hasContent = userText.trim().length > 15;
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden font-body">
       <div className="bg-slate-700 text-white px-4 py-2 text-xs font-display font-semibold flex items-center gap-2">
-        <span>💬</span> Draft Message
+        <span>💬</span>
+        {revealed ? 'Your Draft vs. Suggested Text' : 'Write Your Draft First'}
       </div>
-      <div className="p-4">
-        <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-700 leading-relaxed border border-slate-200 min-h-[80px]">{step.draftText}</div>
-        {!revealed && (
-          <button onClick={onReveal} className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-lg py-2 text-sm font-display font-semibold transition-colors mt-3">{step.actionLabel}</button>
+      <div className="p-4 space-y-3">
+        {!revealed ? (
+          <>
+            <p className="text-xs text-slate-500 font-body">Write your version first — then compare to the suggested text.</p>
+            <textarea
+              value={userText}
+              onChange={e => setUserText(e.target.value)}
+              placeholder="Type your message here..."
+              className="w-full min-h-[100px] text-sm font-body text-slate-700 bg-slate-50 border border-slate-200 rounded-xl p-3 resize-none focus:outline-none focus:border-teal-400 placeholder:text-slate-300"
+            />
+            {hasContent ? (
+              <button onClick={onReveal} className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-lg py-2 text-sm font-display font-semibold transition-colors">
+                {step.actionLabel}
+              </button>
+            ) : (
+              <p className="text-xs text-slate-400 text-center font-body">Write a draft to continue</p>
+            )}
+          </>
+        ) : (
+          <>
+            <div>
+              <div className="text-xs text-slate-500 font-display font-semibold uppercase tracking-wide mb-1">Your Draft</div>
+              <div className="bg-teal-50 border border-teal-100 rounded-xl p-3 text-sm text-slate-700 leading-relaxed whitespace-pre-line">{userText || '(nothing written)'}</div>
+            </div>
+            <div>
+              <div className="text-xs text-slate-500 font-display font-semibold uppercase tracking-wide mb-1">Suggested Text</div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-700 leading-relaxed whitespace-pre-line">{step.draftText}</div>
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -226,6 +402,8 @@ function MockUI({ step, revealed, onReveal }) {
   switch (step.mockType) {
     case 'phone-call':     return <PhoneCallUI step={step} revealed={revealed} onReveal={onReveal} />;
     case 'leads-inbox':    return <LeadsInboxUI step={step} revealed={revealed} onReveal={onReveal} />;
+    case 'live-call':      return <LiveCallUI step={step} revealed={revealed} onReveal={onReveal} />;
+    case 'real-step':      return <RealStepUI step={step} revealed={revealed} onReveal={onReveal} />;
     case 'info-checklist': return <InfoChecklistUI step={step} revealed={revealed} onReveal={onReveal} />;
     case 'text-draft':     return <TextDraftUI step={step} revealed={revealed} onReveal={onReveal} />;
     case 'estimate-card':  return <EstimateUI step={step} revealed={revealed} onReveal={onReveal} />;
@@ -235,21 +413,26 @@ function MockUI({ step, revealed, onReveal }) {
   }
 }
 
-export default function Simulation() {
-  const { step, advanceStep, resetSim } = useSimProgress();
+// ─── Self-advancing mock types (reveal button is inside the component) ────────
+const SELF_REVEALING = ['phone-call', 'leads-inbox', 'live-call', 'real-step', 'info-checklist', 'text-draft', 'estimate-card', 'calendar', 'final-close'];
+
+// ─── Simulation Runner ────────────────────────────────────────────────────────
+
+function SimulationRunner({ scenario, onBack }) {
+  const { step, advanceStep, resetSim } = useSimProgress(scenario.id);
   const [revealed, setRevealed] = useState(false);
   const [currentStepIdx, setCurrentStepIdx] = useState(Math.max(0, step - 1));
-  const [isComplete, setIsComplete] = useState(step >= simulationSteps.length);
+  const [isComplete, setIsComplete] = useState(step >= scenario.steps.length);
 
-  const currentStep = simulationSteps[currentStepIdx];
+  const currentStep = scenario.steps[currentStepIdx];
 
   const handleReveal = () => setRevealed(true);
 
   const handleNext = () => {
     const next = currentStepIdx + 1;
-    if (next >= simulationSteps.length) {
+    if (next >= scenario.steps.length) {
       setIsComplete(true);
-      advanceStep(simulationSteps.length);
+      advanceStep(scenario.steps.length);
     } else {
       setCurrentStepIdx(next);
       advanceStep(next);
@@ -267,15 +450,21 @@ export default function Simulation() {
   if (isComplete) {
     return (
       <div className="space-y-6">
-        <div className="bg-teal-600 rounded-2xl p-6 text-white text-center">
+        <button onClick={onBack} className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 font-body">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+          All Scenarios
+        </button>
+        <div className="rounded-2xl p-6 text-white text-center" style={{ backgroundColor: scenario.color }}>
           <div className="text-4xl mb-3">🎉</div>
           <h1 className="font-display font-bold text-xl mb-2">Simulation Complete</h1>
-          <p className="text-teal-100 font-body text-sm">You followed Terry Webb's fence job from first call to final review. That's the full cycle — every time.</p>
+          <p className="text-white/80 font-body text-sm">{scenario.title} — from first contact to final close. That's the full cycle.</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-5">
           <h2 className="font-display font-bold text-slate-800 mb-3">What you just did:</h2>
           <div className="space-y-2">
-            {simulationSteps.map((s, i) => (
+            {scenario.steps.map((s, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-full bg-green-100 text-green-600 text-xs font-bold flex items-center justify-center flex-shrink-0">{i + 1}</div>
                 <div className="text-sm font-body text-slate-700">{s.title}</div>
@@ -291,21 +480,43 @@ export default function Simulation() {
 
   return (
     <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <button onClick={onBack} className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 font-body">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+          Scenarios
+        </button>
+        <span
+          className="text-xs font-display font-semibold px-2 py-0.5 rounded-full text-white ml-auto"
+          style={{ backgroundColor: scenario.color }}
+        >
+          {scenario.tag}
+        </span>
+      </div>
+
       <div>
-        <h1 className="font-display font-bold text-xl text-slate-800">The Simulation</h1>
-        <p className="text-sm text-slate-500 font-body mt-1">From First Ring to Final Review — Terry Webb's fence job.</p>
+        <h1 className="font-display font-bold text-lg text-slate-800 leading-tight">{scenario.title}</h1>
       </div>
 
       <div className="flex items-center gap-2">
         <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-          <div className="h-full bg-teal-600 rounded-full transition-all duration-500" style={{ width: `${((currentStepIdx) / simulationSteps.length) * 100}%` }} />
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${(currentStepIdx / scenario.steps.length) * 100}%`,
+              backgroundColor: scenario.color,
+            }}
+          />
         </div>
-        <span className="text-xs text-slate-400 font-body flex-shrink-0">Step {currentStepIdx + 1} of {simulationSteps.length}</span>
+        <span className="text-xs text-slate-400 font-body flex-shrink-0">Step {currentStepIdx + 1} of {scenario.steps.length}</span>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
         <div className="bg-slate-800 text-white px-4 py-3 flex items-center gap-3">
-          <div className="w-7 h-7 rounded-full bg-teal-500 text-white text-xs font-display font-bold flex items-center justify-center flex-shrink-0">{currentStep.id}</div>
+          <div className="w-7 h-7 rounded-full text-white text-xs font-display font-bold flex items-center justify-center flex-shrink-0" style={{ backgroundColor: scenario.color }}>
+            {currentStep.id}
+          </div>
           <div>
             <div className="font-display font-bold text-base leading-tight">{currentStep.title}</div>
             <div className="text-slate-400 text-xs font-body">{currentStep.tool}</div>
@@ -317,7 +528,7 @@ export default function Simulation() {
             <p className="text-sm text-slate-700 font-body leading-relaxed">{currentStep.context}</p>
           </div>
           <MockUI step={currentStep} revealed={revealed} onReveal={handleReveal} />
-          {!revealed && !['phone-call','leads-inbox','info-checklist','text-draft','estimate-card','calendar','final-close'].includes(currentStep.mockType) && (
+          {!revealed && !SELF_REVEALING.includes(currentStep.mockType) && (
             <button onClick={handleReveal} className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-xl py-3 text-sm font-display font-semibold transition-colors">{currentStep.actionLabel}</button>
           )}
           {revealed && (
@@ -328,7 +539,7 @@ export default function Simulation() {
           )}
           {revealed && (
             <button onClick={handleNext} className="w-full bg-slate-800 hover:bg-slate-700 text-white rounded-xl py-3 text-sm font-display font-bold transition-colors">
-              {currentStepIdx + 1 >= simulationSteps.length ? 'Finish Simulation →' : `Next: ${simulationSteps[currentStepIdx + 1]?.title} →`}
+              {currentStepIdx + 1 >= scenario.steps.length ? 'Finish Simulation →' : `Next: ${scenario.steps[currentStepIdx + 1]?.title} →`}
             </button>
           )}
         </div>
@@ -337,9 +548,11 @@ export default function Simulation() {
       <div className="bg-white rounded-xl border border-slate-100 p-4">
         <div className="font-display font-semibold text-slate-700 text-xs uppercase tracking-wide mb-3">All Steps</div>
         <div className="space-y-1.5">
-          {simulationSteps.map((s, i) => (
-            <div key={i} className={`flex items-center gap-2 text-xs font-body ${i === currentStepIdx ? 'text-teal-600 font-semibold' : 'text-slate-400'}`}>
-              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${i === currentStepIdx ? 'bg-teal-500' : i < currentStepIdx ? 'bg-green-400' : 'bg-slate-200'}`} />
+          {scenario.steps.map((s, i) => (
+            <div key={i} className={`flex items-center gap-2 text-xs font-body ${i === currentStepIdx ? 'font-semibold' : 'text-slate-400'}`}
+              style={{ color: i === currentStepIdx ? scenario.color : i < currentStepIdx ? '#4ade80' : undefined }}>
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: i === currentStepIdx ? scenario.color : i < currentStepIdx ? '#4ade80' : '#e2e8f0' }} />
               {s.title}
             </div>
           ))}
@@ -347,4 +560,17 @@ export default function Simulation() {
       </div>
     </div>
   );
+}
+
+// ─── Main Export ──────────────────────────────────────────────────────────────
+
+export default function Simulation() {
+  const [selectedScenarioId, setSelectedScenarioId] = useState(null);
+  const selected = scenarios.find(s => s.id === selectedScenarioId);
+
+  if (!selected) {
+    return <ScenarioSelector onSelect={id => setSelectedScenarioId(id)} />;
+  }
+
+  return <SimulationRunner scenario={selected} onBack={() => setSelectedScenarioId(null)} />;
 }

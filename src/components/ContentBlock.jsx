@@ -46,7 +46,16 @@ export default function ContentBlock({ section }) {
         </div>
       );
 
-    case 'link':
+    case 'link': {
+      const isPlaceholder = section.url.startsWith('[');
+      if (isPlaceholder) {
+        return (
+          <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 font-display font-semibold text-sm px-4 py-2 rounded-lg">
+            🔗 {section.label}
+            <span className="font-body font-normal text-amber-500 text-xs">{section.url}</span>
+          </div>
+        );
+      }
       return (
         <a
           href={section.url}
@@ -60,6 +69,7 @@ export default function ContentBlock({ section }) {
           </svg>
         </a>
       );
+    }
 
     default:
       return null;
