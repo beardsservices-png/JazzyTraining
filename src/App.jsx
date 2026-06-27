@@ -6,6 +6,7 @@ import PhaseView from './pages/PhaseView';
 import ModuleView from './pages/ModuleView';
 import Simulation from './pages/Simulation';
 import Reference from './pages/Reference';
+import ReferenceTask from './pages/ReferenceTask';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/module/:moduleId" element={<ModuleView />} />
           <Route path="/simulation" element={<Simulation />} />
           <Route path="/reference" element={<Reference />} />
+          <Route path="/reference/:taskId" element={<ReferenceTask />} />
         </Routes>
       </Layout>
     </BrowserRouter>

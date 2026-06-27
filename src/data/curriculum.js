@@ -66,12 +66,8 @@ export const phases = [
           ]},
           { type: "tip", body: "Do all of this in one sitting — ideally in person or on a video call with Brian. It takes about 20–30 minutes total. Having everything set up before you start means no blocked moments on your first real week." },
           { type: "callout", title: "Also Set Up: Canva", body: "Go to canva.com and sign up using the BHS Google account. Canva is a free design tool you'll use to make Facebook posts look more polished — before/after photo frames, 'New Project Completed' graphics, seasonal announcements. The free version is all you need." },
-          { type: "callout", title: "Also Set Up: GMB Review Link", body: "Log into business.google.com → click on 'Beard's Home Services' → scroll down to 'Get more reviews' → click 'Share review form' → copy the link.
-
-Save this link in your phone's notes app right now. You'll text it to customers after every completed job. Having it ready to paste means you actually send it every time instead of forgetting." },
-          { type: "callout", title: "The Texting Question — Ask Brian Now", body: "Customers who call or text the BHS number come through Bill and the SMS pipeline into the Leads Inbox. But when YOU follow up — which number do you use?
-
-Ask Brian: 'When I call a customer back, do I use my personal number and tell them I'm from BHS? Or is there a separate BHS phone number I should use?' Get this answered before your first callback. It matters." },
+          { type: "callout", title: "Also Set Up: GMB Review Link", body: "Log into business.google.com → click on 'Beard's Home Services' → scroll down to 'Get more reviews' → click 'Share review form' → copy the link.\n\nSave this link in your phone's notes app right now. You'll text it to customers after every completed job. Having it ready to paste means you actually send it every time instead of forgetting." },
+          { type: "callout", title: "The Texting Question — Ask Brian Now", body: "Customers who call or text the BHS number come through Bill and the SMS pipeline into the Leads Inbox. But when YOU follow up — which number do you use?\n\nAsk Brian: 'When I call a customer back, do I use my personal number and tell them I'm from BHS? Or is there a separate BHS phone number I should use?' Get this answered before your first callback. It matters." },
           { type: "callout", title: "Password Safety", body: "Brian should stop texting you passwords and set up a shared password manager. Bitwarden is free at bitwarden.com — Brian creates a shared vault and adds you. Every BHS login goes in there. No more hunting through text threads for a password." },
         ],
         checklist: [
@@ -208,25 +204,11 @@ Ask Brian: 'When I call a customer back, do I use my personal number and tell th
           { type: "callout", title: "Getting to the BHS Page — Two Ways", body: "Option A (Phone): Open Meta Business Suite app → tap the menu → select 'Beard's Home Services' → you're in.\n\nOption B (Computer): Go to business.facebook.com → click on 'Beard's Home Services' in the left panel → you can see your inbox, scheduled posts, and insights from here.\n\nMeta Business Suite is better than the regular Facebook app for managing the business page — it has scheduling, inbox, analytics, and ads all in one place." },
           { type: "callout", title: "Creating a Post — Step by Step", body: "In Meta Business Suite:\n1. Click 'Create post' (blue button, top of the page)\n2. Make sure it says 'Beard's Home Services' in the 'Posting as' field — not your personal name\n3. Type your post text\n4. Click the photo icon to add a photo or video\n5. To schedule instead of posting now: click the arrow next to 'Publish' → select 'Schedule' → choose date and time → confirm\n6. Click 'Publish' or 'Schedule'\n\nBest posting times: Tuesday–Thursday, 7–9 AM or 5–7 PM (local time)." },
           { type: "example", body: "Post example: 'New metal roof install complete out in Lakeview — this one's built to last. If your roof's been giving you trouble, now's the time to get ahead of it before winter. Free estimates, no upfront payment required. Call or text.' Attach a before/after photo." },
-          { type: "callout", title: "What to Post (and What Not To)", body: "Post these:\n• Before/after job photos (most effective)
-• Job in progress shots — people love seeing real work
-• Seasonal service reminders (decks in spring, roofing before storm season)
-• Completed milestone jobs (big deck, full bathroom remodel, etc.)\n
-Don't post:\n• Anything that sounds like corporate ad copy
-• Too many words with no photo
-• Requests for shares or follows
-• Personal stuff from the BHS page" },
+          { type: "callout", title: "What to Post (and What Not To)", body: "Post these:\n• Before/after job photos (most effective)\n• Job in progress shots — people love seeing real work\n• Seasonal service reminders (decks in spring, roofing before storm season)\n• Completed milestone jobs (big deck, full bathroom remodel, etc.)\n\nDon't post:\n• Anything that sounds like corporate ad copy\n• Too many words with no photo\n• Requests for shares or follows\n• Personal stuff from the BHS page" },
           { type: "tip", body: "Aim for 3–5 posts per month. Consistency beats frequency. A steady page is more trusted than a page that posts 10 things one week and goes quiet for two months." },
-          { type: "callout", title: "Responding to Messages — Step by Step", body: "In Meta Business Suite:\n1. Click 'Inbox' in the left menu\n2. You'll see all Facebook messages and Instagram DMs (if applicable) in one place\n3. Click a message to open it\n4. Type your reply and hit send\n
-Target: respond within 2–4 hours during business hours. Facebook shows your average response time on your page — faster is better for trust.\n
-For messages about pricing or availability: gather their info and tell them Brian will be in touch. Don't commit to anything." },
+          { type: "callout", title: "Responding to Messages — Step by Step", body: "In Meta Business Suite:\n1. Click 'Inbox' in the left menu\n2. You'll see all Facebook messages and Instagram DMs (if applicable) in one place\n3. Click a message to open it\n4. Type your reply and hit send\n\nTarget: respond within 2–4 hours during business hours. Facebook shows your average response time on your page — faster is better for trust.\n\nFor messages about pricing or availability: gather their info and tell them Brian will be in touch. Don't commit to anything." },
           { type: "callout", title: "Using Canva for Better Posts", body: "A photo with a simple graphic overlay looks way more professional than a plain photo. Canva makes this easy.\n1. Go to canva.com (log in with BHS Google account)\n2. Search 'Facebook post' in the template search\n3. Pick a template that fits (before/after, announcement, etc.)\n4. Upload your job photo\n5. Edit the text to match (job type, location, BHS name)\n6. Download the image\n7. Upload it to your Facebook post" },
-          { type: "callout", title: "Facebook Best Practices — The Short List", body: "• Photos with people or results perform better than text-only posts
-• Local references (city names, landmarks) get more engagement from the Mountain Home community
-• Tag the location in every post (Mountain Home, AR)
-• Reply to every comment — even a 'Thank you!' goes a long way
-• Don't use hashtags — they don't work well in Mountain Home's Facebook community
-• Post consistently — even one post a week is better than bursts" },
+          { type: "callout", title: "Facebook Best Practices — The Short List", body: "• Photos with people or results perform better than text-only posts\n• Local references (city names, landmarks) get more engagement from the Mountain Home community\n• Tag the location in every post (Mountain Home, AR)\n• Reply to every comment — even a 'Thank you!' goes a long way\n• Don't use hashtags — they don't work well in Mountain Home's Facebook community\n• Post consistently — even one post a week is better than bursts" },
         ],
         checklist: [
           "I can access the BHS Facebook page through Meta Business Suite",
