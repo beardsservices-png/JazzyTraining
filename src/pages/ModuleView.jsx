@@ -77,7 +77,7 @@ function AskClaude({ moduleName, phaseTitle }) {
 export default function ModuleView() {
   const { moduleId } = useParams();
   const navigate = useNavigate();
-  const { markComplete, isComplete } = useProgress();
+  const { markComplete, unmarkComplete, isComplete } = useProgress();
   const { checked, toggle } = useChecklistProgress(moduleId);
   const [justCompleted, setJustCompleted] = useState(false);
 
@@ -156,8 +156,14 @@ export default function ModuleView() {
           {justCompleted ? '✓ Marked Complete!' : 'Mark This Complete →'}
         </button>
       ) : (
-        <div className="w-full py-4 rounded-xl bg-green-50 border border-green-200 text-center">
+        <div className="w-full py-4 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center gap-4">
           <div className="font-display font-semibold text-green-700 text-sm">✓ Completed</div>
+          <button
+            onClick={() => unmarkComplete(moduleId)}
+            className="text-xs text-slate-400 hover:text-red-500 font-body underline underline-offset-2 transition-colors"
+          >
+            Undo
+          </button>
         </div>
       )}
 
