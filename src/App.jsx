@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import PhaseList from './pages/PhaseList';
@@ -18,6 +18,9 @@ export default function App() {
           <Route path="/module/:moduleId" element={<ModuleView />} />
           <Route path="/simulation" element={<Simulation />} />
           <Route path="/reference" element={<Reference />} />
+          {/* Redirect old/broken module URLs to the first orientation module */}
+          <Route path="/module/setup-1" element={<Navigate to="/module/0-1" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
     </BrowserRouter>
