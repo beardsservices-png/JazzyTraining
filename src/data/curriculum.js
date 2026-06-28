@@ -449,7 +449,7 @@ export const phases = [
             { icon: "💰", title: "Expense", body: "Business cost tracking — materials, fuel, supplies, tools." },
           ]},
           { type: "callout", title: "What It's Built On", body: "Python backend, SQLite database, deployed on Railway. You don't need to understand the code — just know that Brian can update and fix it. If something looks wrong or broken, screenshot it and send it to Brian." },
-          { type: "link", label: "Open the BHS App", url: "[ASK BRIAN FOR THE RAILWAY URL]" },
+          { type: "link", label: "Open the BHS App", url: "https://bhsmobileapp-production.up.railway.app" },
         ],
         checklist: [
           "I've bookmarked the BHS App URL on my phone and computer",
