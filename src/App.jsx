@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -10,23 +10,22 @@ import Reference from './pages/Reference';
 import ReferenceTask from './pages/ReferenceTask';
 
 export default function App() {
-  const [ready, setReady] = useState(false);
-
-  // Pull saved progress from server before rendering so any device picks up
-  // where Jazzlyn left off. Falls back to localStorage if offline or in dev.
   useEffect(() => {
     fetch('/api/progress')
       .then(r => r.json())
       .then(data => {
+        let changed = false;
         Object.entries(data).forEach(([k, v]) => {
-          localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+          const val = typeof v === 'string' ? v : JSON.stringify(v);
+          if (localStorage.getItem(k) !== val) {
+            localStorage.setItem(k, val);
+            changed = true;
+          }
         });
+        if (changed) window.location.reload();
       })
-      .catch(() => {})
-      .finally(() => setReady(true));
+      .catch(() => {});
   }, []);
-
-  if (!ready) return null;
 
   return (
     <BrowserRouter>
