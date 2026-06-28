@@ -39,8 +39,6 @@ export default function App() {
           <Route path="/simulation" element={<Simulation />} />
           <Route path="/reference" element={<Reference />} />
           <Route path="/reference/:taskId" element={<ReferenceTask />} />
-          {/* Redirect old/broken module URLs to the first orientation module */}
-          <Route path="/module/setup-1" element={<Navigate to="/module/0-1" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
