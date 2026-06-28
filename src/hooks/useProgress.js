@@ -11,6 +11,22 @@ function loadProgress() {
   }
 }
 
+// Collect all jazzy_ localStorage keys and push to server
+function syncToServer() {
+  const data = {}
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (!key?.startsWith('jazzy_')) continue
+    try { data[key] = JSON.parse(localStorage.getItem(key)) }
+    catch { data[key] = localStorage.getItem(key) }
+  }
+  fetch('/api/progress', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).catch(() => {})
+}
+
 export function useProgress() {
   const [progress, setProgress] = useState(loadProgress);
 
@@ -19,6 +35,7 @@ export function useProgress() {
       if (prev.completedModules.includes(moduleId)) return prev;
       const next = { ...prev, completedModules: [...prev.completedModules, moduleId] };
       localStorage.setItem(PROGRESS_KEY, JSON.stringify(next));
+      syncToServer();
       return next;
     });
   }, []);
@@ -27,6 +44,7 @@ export function useProgress() {
     setProgress(prev => {
       const next = { ...prev, completedModules: prev.completedModules.filter(id => id !== moduleId) };
       localStorage.setItem(PROGRESS_KEY, JSON.stringify(next));
+      syncToServer();
       return next;
     });
   }, []);
@@ -63,6 +81,7 @@ export function useChecklistProgress(moduleId) {
     setChecked(prev => {
       const next = { ...prev, [i]: !prev[i] };
       localStorage.setItem(key, JSON.stringify(next));
+      syncToServer();
       return next;
     });
   }, [key]);
@@ -79,6 +98,7 @@ export function useModuleNotes(moduleId) {
   const saveNotes = useCallback((text) => {
     setNotes(text);
     localStorage.setItem(key, text);
+    syncToServer();
   }, [key]);
 
   return { notes, saveNotes };
@@ -97,12 +117,18 @@ export function useSimProgress(scenarioId) {
 
   const advanceStep = useCallback((nextStep) => {
     setStep(nextStep);
-    if (scenarioId) localStorage.setItem(key, String(nextStep));
+    if (scenarioId) {
+      localStorage.setItem(key, String(nextStep));
+      syncToServer();
+    }
   }, [key, scenarioId]);
 
   const resetSim = useCallback(() => {
     setStep(0);
-    if (scenarioId) localStorage.removeItem(key);
+    if (scenarioId) {
+      localStorage.removeItem(key);
+      syncToServer();
+    }
   }, [key, scenarioId]);
 
   return { step, advanceStep, resetSim };
