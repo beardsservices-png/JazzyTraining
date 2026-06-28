@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { phases } from '../data/curriculum';
-import { useProgress } from '../hooks/useProgress';
+import { useProgress, useChecklistProgress } from '../hooks/useProgress';
 import ContentBlock from '../components/ContentBlock';
 import Checklist from '../components/Checklist';
 
@@ -78,6 +78,7 @@ export default function ModuleView() {
   const { moduleId } = useParams();
   const navigate = useNavigate();
   const { markComplete, isComplete } = useProgress();
+  const { checked, toggle } = useChecklistProgress(moduleId);
   const [justCompleted, setJustCompleted] = useState(false);
 
   let foundModule = null;
@@ -140,7 +141,7 @@ export default function ModuleView() {
       </div>
 
       {foundModule.checklist && foundModule.checklist.length > 0 && (
-        <Checklist items={foundModule.checklist} />
+        <Checklist items={foundModule.checklist} checked={checked} onToggle={toggle} />
       )}
 
       {!complete ? (
