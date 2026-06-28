@@ -1,4 +1,15 @@
+import { useState } from 'react';
+
 export default function ContentBlock({ section }) {
+  const [copied, setCopied] = useState(null);
+
+  const copyText = (text, idx) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(idx);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  };
+
   switch (section.type) {
     case 'text':
       return (
@@ -25,16 +36,103 @@ export default function ContentBlock({ section }) {
       return (
         <div className="bg-white border border-slate-200 rounded-xl p-4">
           <div className="font-display font-semibold text-slate-700 text-sm mb-3">Step by step:</div>
-          <ol className="space-y-2">
+          <ol className="space-y-0">
             {section.items.map((item, i) => (
-              <li key={i} className="flex gap-3 items-start">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-display font-bold flex items-center justify-center mt-0.5">
-                  {i + 1}
-                </span>
-                <span className="text-slate-700 font-body text-sm leading-relaxed">{item}</span>
+              <li key={i} className="flex items-stretch">
+                <div className="flex flex-col items-center flex-shrink-0 mr-3">
+                  <span className="w-6 h-6 rounded-full bg-teal-500 text-white text-xs font-display font-bold flex items-center justify-center flex-shrink-0">
+                    {i + 1}
+                  </span>
+                  {i < section.items.length - 1 && (
+                    <div className="w-0.5 bg-teal-200 flex-1 my-1" />
+                  )}
+                </div>
+                <span className="text-slate-700 font-body text-sm leading-relaxed pb-3">{item}</span>
               </li>
             ))}
           </ol>
+        </div>
+      );
+
+    case 'flow':
+      return (
+        <div className="rounded-xl overflow-hidden border border-slate-200">
+          {section.title && (
+            <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200">
+              <div className="font-display font-semibold text-slate-700 text-sm">{section.title}</div>
+            </div>
+          )}
+          <div className="p-3 bg-white flex flex-col items-center">
+            {section.items.map((item, i) => (
+              <div key={i} className="w-full flex flex-col items-center">
+                <div className="w-full flex items-center gap-3 bg-gradient-to-r from-teal-50 to-white border border-teal-200 rounded-xl px-3 py-2.5">
+                  <span className="w-6 h-6 rounded-full bg-teal-500 text-white text-xs font-display font-bold flex items-center justify-center flex-shrink-0">
+                    {i + 1}
+                  </span>
+                  <span className="text-slate-700 font-body text-sm leading-snug">{item}</span>
+                </div>
+                {i < section.items.length - 1 && (
+                  <div className="flex flex-col items-center py-0.5">
+                    <div className="w-px h-2 bg-teal-300" />
+                    <svg width="12" height="7" viewBox="0 0 12 7" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="#5eead4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'grid':
+      return (
+        <div className="grid grid-cols-2 gap-2">
+          {section.items.map((item, i) => (
+            <div key={i} className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-1">
+              <span className="text-xl">{item.icon}</span>
+              <div className="font-display font-semibold text-slate-800 text-xs leading-tight">{item.title}</div>
+              <div className="text-slate-500 font-body text-xs leading-relaxed">{item.body}</div>
+            </div>
+          ))}
+        </div>
+      );
+
+    case 'prompt-bank':
+      return (
+        <div className="rounded-xl overflow-hidden border border-slate-800">
+          {section.title && (
+            <div className="bg-slate-800 px-4 py-2.5 border-b border-slate-700">
+              <div className="font-display font-semibold text-slate-200 text-xs">{section.title}</div>
+            </div>
+          )}
+          <div className="bg-slate-900 divide-y divide-slate-800">
+            {section.items.map((prompt, i) => (
+              <div key={i} className="flex items-start justify-between gap-3 px-3 py-3">
+                <p className="text-slate-300 font-mono text-xs leading-relaxed flex-1">{prompt}</p>
+                <button
+                  onClick={() => copyText(prompt, i)}
+                  className={`text-xs font-display font-semibold px-2.5 py-1 rounded-lg flex-shrink-0 transition-all ${
+                    copied === i
+                      ? 'bg-green-600 text-white'
+                      : 'bg-teal-700 hover:bg-teal-600 text-white'
+                  }`}
+                >
+                  {copied === i ? '✓' : 'Copy'}
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="bg-slate-900 px-3 pb-3">
+            <a
+              href="https://claude.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-teal-400 hover:text-teal-300 font-body text-xs font-semibold transition-colors"
+            >
+              Open Claude.ai to paste →
+            </a>
+          </div>
         </div>
       );
 
@@ -46,16 +144,7 @@ export default function ContentBlock({ section }) {
         </div>
       );
 
-    case 'link': {
-      const isPlaceholder = section.url.startsWith('[');
-      if (isPlaceholder) {
-        return (
-          <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 font-display font-semibold text-sm px-4 py-2 rounded-lg">
-            🔗 {section.label}
-            <span className="font-body font-normal text-amber-500 text-xs">{section.url}</span>
-          </div>
-        );
-      }
+    case 'link':
       return (
         <a
           href={section.url}
@@ -69,7 +158,6 @@ export default function ContentBlock({ section }) {
           </svg>
         </a>
       );
-    }
 
     default:
       return null;

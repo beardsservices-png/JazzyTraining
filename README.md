@@ -44,9 +44,18 @@ Simulation steps live in `src/data/simulation.js`.
 
 ## Filling in Placeholders
 
-After deployment, update these in the app:
-- `src/pages/Reference.jsx` — BHS App Railway URL, Facebook page URL, Brian's phone number
-- `src/pages/ModuleView.jsx` → Module 3-1 link — Railway URL for BHS App
+✅ As of June 2026 these are all filled in (BHS App URL, Facebook page, Brian's
+phone, Google review link). They live in the `LINKS` object and `systems` list
+in `src/data/referenceTasks.js` / `src/pages/Reference.jsx`, plus the BHS App
+link in `src/data/curriculum.js` and the review link in `src/data/simulation.js`.
+
+## Reference Catalog & PWA (June 2026)
+
+The app now includes a **Task Reference catalog** (`/reference`) and is an
+**installable PWA** ("Add to Home Screen"). See
+[`docs/2026-06_reference-catalog-and-pwa.md`](docs/2026-06_reference-catalog-and-pwa.md)
+for how it's built, the task data model, and gotchas (including a build-breaking
+string bug that was fixed).
 
 ## Adding a New Module
 
