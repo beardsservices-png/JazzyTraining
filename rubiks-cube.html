@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rubik's Cube</title>
+<style>
+  :root {
+    --bg: #0d0f12;
+    --panel: #14171c;
+    --panel-2: #1b1f26;
+    --border: #2a2f38;
+    --text: #d7dce2;
+    --dim: #7d8794;
+    --accent: #4ea1ff;
+    --accent-2: #ffcc44;
+    --danger: #ff5566;
+    --ok: #45d483;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
+    overflow: hidden;
+  }
+  #app { display: flex; width: 100vw; height: 100vh; }
+
+  /* Sidebar */
+  #sidebar {
+    width: 30%;
+    min-width: 340px;
+    max-width: 520px;
+    height: 100%;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 14px;
+    font-size: 12px;
+  }
+  #sidebar::-webkit-scrollbar { width: 8px; }
+  #sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  #viewport { flex: 1; position: relative; }
+  #viewport canvas { display: block; }
+
+  h1 {
+    font-size: 15px; margin: 0 0 4px 0; color: #fff; letter-spacing: 0.5px;
+  }
+  .subtitle { color: var(--dim); font-size: 11px; margin-bottom: 14px; }
+
+  section {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+  section h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+    margin: 0 0 8px 0;
+  }
+
+  .move-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+  }
+  button {
+    font-family: inherit;
+    font-size: 11px;
+    background: #232833;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 2px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, transform 0.05s;
+  }
+  button:hover { background: #2c3340; border-color: var(--accent); }
+  button:active { transform: scale(0.94); }
+  .move-grid button { padding: 8px 0; font-weight: 600; }
+
+  .row-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .row-buttons button { flex: 1; min-width: 70px; }
+
+  .btn-scramble { border-color: var(--accent-2); color: var(--accent-2); }
+  .btn-reset { border-color: var(--danger); color: var(--danger); }
+  .btn-primary { border-color: var(--accent); color: var(--accent); }
+  .btn-ok { border-color: var(--ok); color: var(--ok); }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    color: var(--dim);
+  }
+  .stat-row span.val { color: #fff; font-weight: 700; font-size: 14px; }
+
+  .algo-item {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    background: #1d2229;
+  }
+  .algo-item .algo-name {
+    font-weight: 700; color: #fff; font-size: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .algo-item .algo-moves {
+    color: var(--accent-2); font-size: 11px; margin: 4px 0;
+    word-break: break-all;
+  }
+  .algo-item .algo-desc {
+    color: var(--dim); font-size: 10.5px; line-height: 1.4;
+  }
+  .algo-item .algo-actions { margin-top: 6px; display: flex; gap: 6px; }
+  .algo-item .algo-actions button { flex: 1; }
+
+  #history-seq {
+    background: #101317;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px;
+    font-size: 11px;
+    color: var(--accent-2);
+    word-break: break-all;
+    max-height: 60px;
+    overflow-y: auto;
+    margin-bottom: 8px;
+  }
+  #history-list {
+    max-height: 160px;
+    overflow-y: auto;
+    font-size: 11px;
+  }
+  #history-list div { padding: 2px 0; color: var(--dim); border-bottom: 1px dashed #23272f; }
+  #history-list div span.idx { color: var(--accent); margin-right: 6px; }
+
+  #hint-box {
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  #hint-box .stage {
+    color: var(--ok);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  input[type=text] {
+    width: 100%;
+    font-family: inherit;
+    background: #101317;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 6px;
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+
+  #solved-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    z-index: 10;
+  }
+  #solved-overlay.show { opacity: 1; }
+  #solved-overlay span {
+    font-size: 64px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    color: var(--ok);
+    text-shadow: 0 0 30px rgba(69,212,131,0.9), 0 0 60px rgba(69,212,131,0.6);
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+
+  .hotkey-hint { color: var(--dim); font-size: 10px; margin-top: 4px; line-height:1.4; }
+  kbd {
+    background: #232833; border: 1px solid var(--border); border-radius: 3px;
+    padding: 1px 4px; font-size: 10px; color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="sidebar">
+    <h1>RUBIK'S CUBE // three.js</h1>
+    <div class="subtitle">drag canvas to orbit &middot; click to move</div>
+
+    <section>
+      <h2>Moves</h2>
+      <div class="move-grid" id="move-grid"></div>
+      <div class="hotkey-hint">
+        keys: <kbd>U</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>B</kbd> <kbd>L</kbd> <kbd>R</kbd> = CW,
+        + <kbd>Shift</kbd> = prime, + <kbd>2</kbd> = double
+      </div>
+    </section>
+
+    <section>
+      <h2>Controls</h2>
+      <div class="row-buttons">
+        <button class="btn-scramble" id="btn-scramble">Scramble</button>
+        <button class="btn-reset" id="btn-reset">Reset</button>
+        <button class="btn-primary" id="btn-undo">Undo</button>
+      </div>
+      <div class="row-buttons" style="margin-top:6px;">
+        <button class="btn-ok" id="btn-checkpoint">Save Checkpoint</button>
+        <button class="btn-ok" id="btn-restore">Restore Checkpoint</button>
+      </div>
+      <div class="stat-row"><span>Move Count</span><span class="val" id="move-count">0</span></div>
+    </section>
+
+    <section>
+      <h2>Algorithm Library</h2>
+      <div id="algo-list"></div>
+      <input type="text" id="new-algo-name" placeholder="name" />
+      <input type="text" id="new-algo-moves" placeholder="moves e.g. R U R' U'" />
+      <input type="text" id="new-algo-desc" placeholder="description (optional)" />
+      <button class="btn-primary" id="btn-add-algo" style="width:100%;">+ Add Algorithm</button>
+    </section>
+
+    <section>
+      <h2>Hint / CFOP Stage</h2>
+      <div id="hint-box">Click "Analyze" to get guidance.</div>
+      <button class="btn-primary" id="btn-hint" style="width:100%; margin-top:8px;">Analyze Cube State</button>
+    </section>
+
+    <section>
+      <h2>Move History</h2>
+      <div id="history-seq">(none)</div>
+      <div id="history-list"></div>
+    </section>
+  </div>
+
+  <div id="viewport">
+    <div id="solved-overlay"><span>SOLVED!</span></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     CONSTANTS
+     ============================================================ */
+  var COLORS = {
+    white:  0xffffff,
+    yellow: 0xffd500,
+    red:    0xc41e3a,
+    orange: 0xff8c00,
+    blue:   0x0051ba,
+    green:  0x009e60,
+    black:  0x111111
+  };
+
+  // Face key order used everywhere: U D F B L R (Up Down Front Back Left Right)
+  var FACE_ORDER = ['U', 'D', 'F', 'B', 'L', 'R'];
+  var FACE_COLOR = { U: 'white', D: 'yellow', F: 'red', B: 'orange', L: 'green', R: 'blue' };
+
+  var MOVE_MS = 300;
+
+  /* ============================================================
+     THREE.JS SCENE SETUP
+     ============================================================ */
+  var viewport = document.getElementById('viewport');
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0d0f12);
+
+  var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  camera.position.set(5.5, 5.5, 7.5);
+
+  var renderer = new THREE.WebGLRenderer({ antialias: true });
+  viewport.appendChild(renderer.domElement);
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+
+  var ambient = new THREE.AmbientLight(0xffffff, 0.55);
+  scene.add(ambient);
+  var dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+  dirLight.position.set(6, 10, 8);
+  scene.add(dirLight);
+  var dirLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+  dirLight2.position.set(-6, -4, -8);
+  scene.add(dirLight2);
+
+  var controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 5;
+  controls.maxDistance = 16;
+
+  var cubeGroup = new THREE.Group();
+  scene.add(cubeGroup);
+
+  /* ============================================================
+     CUBE STATE MODEL
+     A cubie is identified by grid coords x,y,z in {-1,0,1}.
+     Each cubie has a "stickers" object mapping face-normal-key ->
+     current color name, tracked purely for the solved check &
+     hint system. The mesh's material colors are the visual source
+     of truth for rendering but we mirror them in stickers.
+     ============================================================ */
+
+  var cubies = []; // { mesh, x, y, z, stickers: {px,nx,py,ny,pz,nz: colorName} }
+
+  function faceMaterials(x, y, z) {
+    // BoxGeometry face order: +x, -x, +y, -y, +z, -z
+    var mats = [];
+    var faces = [
+      { axis: 'px', cond: x === 1,  color: FACE_COLOR.R },
+      { axis: 'nx', cond: x === -1, color: FACE_COLOR.L },
+      { axis: 'py', cond: y === 1,  color: FACE_COLOR.U },
+      { axis: 'ny', cond: y === -1, color: FACE_COLOR.D },
+      { axis: 'pz', cond: z === 1,  color: FACE_COLOR.F },
+      { axis: 'nz', cond: z === -1, color: FACE_COLOR.B }
+    ];
+    var stickers = {};
+    faces.forEach(function (f) {
+      var colorName = f.cond ? f.color : 'black';
+      stickers[f.axis] = colorName;
+      mats.push(new THREE.MeshLambertMaterial({ color: COLORS[colorName] }));
+    });
+    return { mats: mats, stickers: stickers };
+  }
+
+  var CUBIE_SIZE = 0.96;
+  var GAP = 1.0; // spacing between cubie centers
+
+  function buildCube() {
+    cubies.forEach(function (c) { cubeGroup.remove(c.mesh); });
+    cubies = [];
+    var geo = new THREE.BoxGeometry(CUBIE_SIZE, CUBIE_SIZE, CUBIE_SIZE);
+    for (var x = -1; x <= 1; x++) {
+      for (var y = -1; y <= 1; y++) {
+        for (var z = -1; z <= 1; z++) {
+          var fm = faceMaterials(x, y, z);
+          var mesh = new THREE.Mesh(geo, fm.mats);
+          mesh.position.set(x * GAP, y * GAP, z * GAP);
+          cubeGroup.add(mesh);
+          cubies.push({ mesh: mesh, x: x, y: y, z: z, stickers: fm.stickers });
+        }
+      }
+    }
+  }
+  buildCube();
+
+  /* ============================================================
+     MOVE DEFINITIONS
+     Each move selects a slice of cubies by coordinate, rotates
+     them 90 deg (or -90 / 180) around an axis, then updates each
+     cubie's integer grid coords + sticker mapping to match.
+     ============================================================ */
+
+  // axis: 'x' | 'y' | 'z'; layer: coordinate value (-1,0,1) selecting slice
+  // dir: 1 = CCW looking from + axis toward origin (three.js positive rotation), used with sign per move
+  var MOVE_DEFS = {
+    U: { axis: 'y', layer: 1,  sign: -1 },
+    D: { axis: 'y', layer: -1, sign: 1 },
+    F: { axis: 'z', layer: 1,  sign: -1 },
+    B: { axis: 'z', layer: -1, sign: 1 },
+    L: { axis: 'x', layer: -1, sign: 1 },
+    R: { axis: 'x', layer: 1,  sign: -1 }
+  };
+
+  function rotateCoord(c, axis, quarterTurns) {
+    // quarterTurns: integer, positive = one direction, applied 1..3 times
+    var x = c.x, y = c.y, z = c.z;
+    for (var i = 0; i < ((quarterTurns % 4) + 4) % 4; i++) {
+      var nx, ny, nz;
+      if (axis === 'x') { nx = x; ny = -z; nz = y; }
+      else if (axis === 'y') { nx = z; ny = y; nz = -x; }
+      else { nx = -y; ny = x; nz = z; }
+      x = nx; y = ny; z = nz;
+    }
+    return { x: x, y: y, z: z };
+  }
+
+  function rotateStickers(stickers, axis, quarterTurns) {
+    // Map sticker axis-keys (px,nx,py,ny,pz,nz) through rotation the same number of times,
+    // consistent with the coordinate rotation performed in rotateCoord() per axis.
+    function stepMap(axis) {
+      if (axis === 'x') return { py: 'pz', pz: 'ny', ny: 'nz', nz: 'py', px: 'px', nx: 'nx' };
+      if (axis === 'y') return { pz: 'px', px: 'nz', nz: 'nx', nx: 'pz', py: 'py', ny: 'ny' };
+      return { py: 'nx', nx: 'ny', ny: 'px', px: 'py', pz: 'pz', nz: 'nz' };
+    }
+    var steps = ((quarterTurns % 4) + 4) % 4;
+    var result = stickers;
+    for (var i = 0; i < steps; i++) {
+      var sm = stepMap(axis);
+      var next = {};
+      Object.keys(result).forEach(function (k) {
+        next[sm[k]] = result[k];
+      });
+      result = next;
+    }
+    return result;
+  }
+
+  function applyMaterialsFromStickers(cubie) {
+    // material index order matches faceMaterials(): px,nx,py,ny,pz,nz
+    var order = ['px', 'nx', 'py', 'ny', 'pz', 'nz'];
+    cubie.mesh.material.forEach(function (m, i) {
+      m.color.setHex(COLORS[cubie.stickers[order[i]]]);
+    });
+  }
+
+  function selectLayer(axis, layer) {
+    return cubies.filter(function (c) { return c[axis] === layer; });
+  }
+
+  /* ============================================================
+     ANIMATION QUEUE
+     ============================================================ */
+  var animating = false;
+  var moveQueue = [];
+  var history = []; // {move, snapshotBefore}
+  var checkpoint = null;
+  var moveCount = 0;
+
+  function snapshotState() {
+    return cubies.map(function (c) { return { x: c.x, y: c.y, z: c.z, stickers: Object.assign({}, c.stickers) }; });
+  }
+  function restoreState(snap) {
+    for (var i = 0; i < cubies.length; i++) {
+      cubies[i].x = snap[i].x;
+      cubies[i].y = snap[i].y;
+      cubies[i].z = snap[i].z;
+      cubies[i].stickers = Object.assign({}, snap[i].stickers);
+      cubies[i].mesh.position.set(cubies[i].x * GAP, cubies[i].y * GAP, cubies[i].z * GAP);
+      cubies[i].mesh.rotation.set(0, 0, 0);
+      cubies[i].mesh.quaternion.identity();
+      applyMaterialsFromStickers(cubies[i]);
+    }
+  }
+
+  function parseMove(token) {
+    // token like "U", "U'", "U2"
+    var face = token[0];
+    var mod = token.slice(1);
+    var quarterTurns = 1, times = 1;
+    if (mod === "'") times = -1;
+    else if (mod === '2') times = 2;
+    return { face: face, times: times, label: token };
+  }
+
+  function queueMove(token) {
+    moveQueue.push(token);
+    processQueue();
+  }
+  function queueMoves(tokens) {
+    tokens.forEach(function (t) { moveQueue.push(t); });
+    processQueue();
+  }
+
+  function processQueue() {
+    if (animating || moveQueue.length === 0) return;
+    var token = moveQueue.shift();
+    animating = true;
+    performMove(token, function () {
+      animating = false;
+      processQueue();
+    });
+  }
+
+  function performMove(token, callback, recordHistory) {
+    if (recordHistory === undefined) recordHistory = true;
+    var m = parseMove(token);
+    var def = MOVE_DEFS[m.face];
+    if (!def) { if (callback) callback(); return; }
+
+    if (recordHistory) history.push({ move: token, snapshotBefore: snapshotState() });
+
+    var layerCubies = selectLayer(def.axis, def.layer);
+    var quarterTurns = (m.times === 2) ? 2 : m.times; // 1, -1, or 2
+    var totalAngle = (Math.PI / 2) * quarterTurns * def.sign;
+
+    // pivot group for animation
+    var pivot = new THREE.Group();
+    scene.add(pivot);
+    // Convert to scene coordinates: cubeGroup has no rotation/offset beyond identity, so direct add works
+    layerCubies.forEach(function (c) {
+      pivot.add(c.mesh);
+    });
+
+    var axisVec = def.axis === 'x' ? new THREE.Vector3(1, 0, 0) :
+                  def.axis === 'y' ? new THREE.Vector3(0, 1, 0) :
+                  new THREE.Vector3(0, 0, 1);
+
+    var startTime = null;
+    var duration = MOVE_MS;
+
+    function animate(ts) {
+      if (startTime === null) startTime = ts;
+      var elapsed = ts - startTime;
+      var t = Math.min(elapsed / duration, 1);
+      var eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // ease in-out quad
+      pivot.rotation.set(0, 0, 0);
+      pivot.setRotationFromAxisAngle(axisVec, totalAngle * eased);
+
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // finalize: bake rotation into cubie world position/coords, detach from pivot
+        pivot.updateMatrixWorld(true);
+        layerCubies.forEach(function (c) {
+          // bake world transform back into cubeGroup space (cubeGroup itself unrotated)
+          var worldPos = new THREE.Vector3();
+          c.mesh.getWorldPosition(worldPos);
+          var worldQuat = new THREE.Quaternion();
+          c.mesh.getWorldQuaternion(worldQuat);
+          cubeGroup.add(c.mesh);
+          c.mesh.position.copy(worldPos);
+          c.mesh.quaternion.copy(worldQuat);
+
+          // update integer coords
+          var newCoord = rotateCoord(c, def.axis, quarterTurns * (def.sign === -1 ? -1 : 1));
+          c.x = Math.round(newCoord.x);
+          c.y = Math.round(newCoord.y);
+          c.z = Math.round(newCoord.z);
+          c.mesh.position.set(c.x * GAP, c.y * GAP, c.z * GAP);
+
+          // update stickers
+          c.stickers = rotateStickers(c.stickers, def.axis, quarterTurns * (def.sign === -1 ? -1 : 1));
+          applyMaterialsFromStickers(c);
+
+          // snap rotation to avoid float drift (mesh geometry is axis aligned cube, so any
+          // multiple-of-90 rotation renders identically to identity for a cube mesh with
+          // per-face materials already updated) -- reset visual rotation since stickers baked
+          c.mesh.rotation.set(0, 0, 0);
+          c.mesh.quaternion.identity();
+        });
+        scene.remove(pivot);
+
+        moveCount++;
+        updateMoveCounter();
+        logHistory();
+        checkSolved();
+        if (callback) callback();
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+
+  /* ============================================================
+     SOLVED DETECTION
+     ============================================================ */
+  function isSolved() {
+    // For each face direction, all 9 stickers facing that direction must match
+    var dirs = ['px', 'nx', 'py', 'ny', 'pz', 'nz'];
+    for (var i = 0; i < dirs.length; i++) {
+      var dir = dirs[i];
+      var colorSeen = null;
+      for (var j = 0; j < cubies.length; j++) {
+        var c = cubies[j];
+        if (c.stickers[dir] !== 'black') {
+          if (colorSeen === null) colorSeen = c.stickers[dir];
+          else if (c.stickers[dir] !== colorSeen) return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  var solvedOverlay = document.getElementById('solved-overlay');
+  var solvedFlashTimer = null;
+  function checkSolved() {
+    if (isSolved()) {
+      solvedOverlay.classList.add('show');
+      clearTimeout(solvedFlashTimer);
+      solvedFlashTimer = setTimeout(function () {
+        solvedOverlay.classList.remove('show');
+      }, 1800);
+    }
+  }
+
+  /* ============================================================
+     UI: MOVE BUTTONS
+     ============================================================ */
+  var ALL_MOVES = [];
+  ['U', 'D', 'F', 'B', 'L', 'R'].forEach(function (f) {
+    ALL_MOVES.push(f, f + "'", f + '2');
+  });
+
+  var moveGrid = document.getElementById('move-grid');
+  ALL_MOVES.forEach(function (mv) {
+    var btn = document.createElement('button');
+    btn.textContent = mv;
+    btn.addEventListener('click', function () { queueMove(mv); });
+    moveGrid.appendChild(btn);
+  });
+
+  var moveCountEl = document.getElementById('move-count');
+  function updateMoveCounter() {
+    moveCountEl.textContent = String(moveCount);
+  }
+
+  /* ============================================================
+     SCRAMBLE / RESET / UNDO / CHECKPOINT
+     ============================================================ */
+  document.getElementById('btn-scramble').addEventListener('click', function () {
+    var faces = ['U', 'D', 'F', 'B', 'L', 'R'];
+    var mods = ['', "'", '2'];
+    var seq = [];
+    var lastFace = null;
+    for (var i = 0; i < 20; i++) {
+      var f;
+      do { f = faces[Math.floor(Math.random() * faces.length)]; } while (f === lastFace);
+      lastFace = f;
+      var m = mods[Math.floor(Math.random() * mods.length)];
+      seq.push(f + m);
+    }
+    queueMoves(seq);
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', function () {
+    moveQueue = [];
+    animating = false;
+    buildCube();
+    history = [];
+    moveCount = 0;
+    updateMoveCounter();
+    logHistory();
+    solvedOverlay.classList.remove('show');
+  });
+
+  document.getElementById('btn-undo').addEventListener('click', function () {
+    if (animating || moveQueue.length > 0 || history.length === 0) return;
+    var last = history.pop();
+    restoreState(last.snapshotBefore);
+    moveCount = Math.max(0, moveCount - 1);
+    updateMoveCounter();
+    logHistory();
+  });
+
+  document.getElementById('btn-checkpoint').addEventListener('click', function () {
+    checkpoint = { snap: snapshotState(), moveCount: moveCount, history: history.map(function(h){return {move:h.move};}) };
+    flashButton('btn-checkpoint');
+  });
+
+  document.getElementById('btn-restore').addEventListener('click', function () {
+    if (!checkpoint) return;
+    restoreState(checkpoint.snap);
+    moveCount = checkpoint.moveCount;
+    updateMoveCounter();
+    flashButton('btn-restore');
+  });
+
+  function flashButton(id) {
+    var el = document.getElementById(id);
+    var orig = el.style.background;
+    el.style.background = '#2c4a3a';
+    setTimeout(function () { el.style.background = orig; }, 220);
+  }
+
+  /* ============================================================
+     KEYBOARD SHORTCUTS
+     ============================================================ */
+  var faceKeys = { u: 'U', d: 'D', f: 'F', b: 'B', l: 'L', r: 'R' };
+  var pendingFace = null;   // face letter awaiting a possible trailing "2"
+  var pendingPrime = false;
+  var pendingTimer = null;
+  var DOUBLE_WINDOW_MS = 350;
+
+  function fireOrPromote(face, isPrime) {
+    // fire immediately, but keep it "pending" briefly so a follow-up "2" can upgrade it to a double
+    queueMove(face + (isPrime ? "'" : ''));
+    pendingFace = face;
+    pendingPrime = isPrime;
+    clearTimeout(pendingTimer);
+    pendingTimer = setTimeout(function () { pendingFace = null; }, DOUBLE_WINDOW_MS);
+  }
+
+  window.addEventListener('keydown', function (e) {
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    var lower = e.key.toLowerCase();
+
+    if (faceKeys[lower]) {
+      e.preventDefault();
+      fireOrPromote(faceKeys[lower], e.shiftKey);
+      return;
+    }
+
+    if (e.key === '2' && pendingFace) {
+      e.preventDefault();
+      clearTimeout(pendingTimer);
+      // last move fired was a single quarter turn of pendingFace; queue another quarter turn
+      // in the same direction so the net effect is a double turn (X2).
+      queueMove(pendingFace + (pendingPrime ? "'" : ''));
+      pendingFace = null;
+    }
+  });
+
+  /* ============================================================
+     ALGORITHM LIBRARY
+     ============================================================ */
+  var DEFAULT_ALGOS = [
+    { name: 'Sexy Move', moves: "R U R' U'", desc: 'The most common trigger, used throughout F2L and OLL algorithms.' },
+    { name: 'Sune', moves: "R U R' U R U2 R'", desc: 'OLL case: orients last layer corners with one headlights pattern.' },
+    { name: "Anti-Sune", moves: "R U2 R' U' R U' R'", desc: 'OLL case: mirror of Sune for the opposite corner orientation.' },
+    { name: 'T-Perm', moves: "R U R' U' R' F R2 U' R' U' R U R' F'", desc: 'PLA: swaps two adjacent edges and two adjacent corners.' },
+    { name: 'Y-Perm', moves: "F R U' R' U' R U R' F' R U R' U' R' F R F'", desc: 'PLL: swaps two diagonal corners and two adjacent edges.' },
+    { name: 'J-Perm (Jb)', moves: "R U R' F' R U R' U' R' F R2 U' R'", desc: 'PLL: swaps adjacent edges and corners in a J-shaped pattern.' },
+    { name: 'OLL Fish (2)', moves: "R U2 R' U' R U R' U' R U' R'", desc: 'OLL: orients the "fish" shape pattern on the last layer.' },
+    { name: 'F2L Basic Pair', moves: "U R U' R'", desc: 'F2L: inserts a corner-edge pair directly into its slot.' },
+    { name: 'F2L Pair (2)', moves: "U' F' U F", desc: 'F2L: alternate basic insertion for a pair under the front-left slot.' },
+    { name: 'White Cross Setup', moves: "F R U R' U' F'", desc: 'Common setup used while building the white cross / OLL (also known as the "fish" pattern).' }
+  ];
+
+  var LS_KEY = 'rubiks_custom_algos_v1';
+  function loadCustomAlgos() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function saveCustomAlgos(list) {
+    localStorage.setItem(LS_KEY, JSON.stringify(list));
+  }
+
+  var algoListEl = document.getElementById('algo-list');
+  function renderAlgos() {
+    algoListEl.innerHTML = '';
+    var custom = loadCustomAlgos();
+    var all = DEFAULT_ALGOS.map(function (a) { return Object.assign({ builtin: true }, a); })
+      .concat(custom.map(function (a) { return Object.assign({ builtin: false }, a); }));
+
+    all.forEach(function (algo, idx) {
+      var item = document.createElement('div');
+      item.className = 'algo-item';
+
+      var nameRow = document.createElement('div');
+      nameRow.className = 'algo-name';
+      nameRow.innerHTML = '<span>' + escapeHtml(algo.name) + '</span>' + (algo.builtin ? '<span style="color:var(--dim);font-weight:400;">builtin</span>' : '');
+      item.appendChild(nameRow);
+
+      var movesRow = document.createElement('div');
+      movesRow.className = 'algo-moves';
+      movesRow.textContent = algo.moves;
+      item.appendChild(movesRow);
+
+      var descRow = document.createElement('div');
+      descRow.className = 'algo-desc';
+      descRow.textContent = algo.desc || '';
+      item.appendChild(descRow);
+
+      var actions = document.createElement('div');
+      actions.className = 'algo-actions';
+      var applyBtn = document.createElement('button');
+      applyBtn.textContent = 'Apply';
+      applyBtn.className = 'btn-primary';
+      applyBtn.addEventListener('click', function () {
+        queueMoves(algo.moves.trim().split(/\s+/));
+      });
+      actions.appendChild(applyBtn);
+
+      if (!algo.builtin) {
+        var delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.className = 'btn-reset';
+        delBtn.addEventListener('click', function () {
+          var list = loadCustomAlgos();
+          var realIdx = list.findIndex(function (a) { return a.name === algo.name && a.moves === algo.moves; });
+          if (realIdx > -1) list.splice(realIdx, 1);
+          saveCustomAlgos(list);
+          renderAlgos();
+        });
+        actions.appendChild(delBtn);
+      }
+      item.appendChild(actions);
+      algoListEl.appendChild(item);
+    });
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  renderAlgos();
+
+  document.getElementById('btn-add-algo').addEventListener('click', function () {
+    var nameEl = document.getElementById('new-algo-name');
+    var movesEl = document.getElementById('new-algo-moves');
+    var descEl = document.getElementById('new-algo-desc');
+    var name = nameEl.value.trim();
+    var moves = movesEl.value.trim();
+    if (!name || !moves) return;
+    var valid = moves.split(/\s+/).every(function (t) { return /^[UDFBLR](2|')?$/.test(t); });
+    if (!valid) { alert("Invalid move sequence. Use tokens like: R U R' U2"); return; }
+    var list = loadCustomAlgos();
+    list.push({ name: name, moves: moves, desc: descEl.value.trim() });
+    saveCustomAlgos(list);
+    nameEl.value = ''; movesEl.value = ''; descEl.value = '';
+    renderAlgos();
+  });
+
+  /* ============================================================
+     MOVE HISTORY LOG
+     ============================================================ */
+  var historySeqEl = document.getElementById('history-seq');
+  var historyListEl = document.getElementById('history-list');
+  function logHistory() {
+    var moves = history.map(function (h) { return h.move; });
+    historySeqEl.textContent = moves.length ? moves.join(' ') : '(none)';
+    historyListEl.innerHTML = '';
+    moves.forEach(function (mv, i) {
+      var row = document.createElement('div');
+      row.innerHTML = '<span class="idx">' + (i + 1) + '.</span>' + escapeHtml(mv);
+      historyListEl.appendChild(row);
+    });
+    historyListEl.scrollTop = historyListEl.scrollHeight;
+  }
+  logHistory();
+
+  /* ============================================================
+     HINT SYSTEM (CFOP STAGE DETECTION)
+     ============================================================ */
+  function centerColor(dir) {
+    // center cubie for each direction always sits at the fixed coordinate; find it directly
+    var map = { py: { x: 0, y: 1, z: 0 }, ny: { x: 0, y: -1, z: 0 }, pz: { x: 0, y: 0, z: 1 }, nz: { x: 0, y: 0, z: -1 }, px: { x: 1, y: 0, z: 0 }, nx: { x: -1, y: 0, z: 0 } };
+    var coord = map[dir];
+    var c = cubies.find(function (cc) { return cc.x === coord.x && cc.y === coord.y && cc.z === coord.z; });
+    return c.stickers[dir];
+  }
+
+  function getCubieAt(x, y, z) {
+    return cubies.find(function (c) { return c.x === x && c.y === y && c.z === z; });
+  }
+
+  function analyzeCFOP() {
+    // Assume white=U center is the cross color for this simple heuristic (fixed centers, standard orientation)
+    var upColor = centerColor('py');
+    var downColor = centerColor('ny');
+
+    // White cross: check the 4 edge cubies adjacent to U face (non-corner, y=1) have matching up-facing sticker
+    // and their side sticker matches the corresponding side center.
+    var edgePositions = [
+      { x: 0, y: 1, z: 1, side: 'pz' }, { x: 0, y: 1, z: -1, side: 'nz' },
+      { x: 1, y: 1, z: 0, side: 'px' }, { x: -1, y: 1, z: 0, side: 'nx' }
+    ];
+    var crossDone = edgePositions.every(function (p) {
+      var c = getCubieAt(p.x, p.y, p.z);
+      return c.stickers.py === upColor && c.stickers[p.side] === centerColor(p.side);
+    });
+
+    if (!crossDone) {
+      return {
+        stage: 'White Cross',
+        text: "Form a cross on the U (white) face: place the four white edge pieces around the white center so each " +
+          "edge's side sticker also matches its neighboring center color. Look for white edges in the D layer or middle " +
+          "layer first — use F2 / R2-style flips to bring them to the top without disturbing solved edges."
+      };
+    }
+
+    // White corners: check 4 corner cubies at y=1 match up + both sides
+    var cornerPositions = [
+      { x: 1, y: 1, z: 1, sides: ['px', 'pz'] }, { x: -1, y: 1, z: 1, sides: ['nx', 'pz'] },
+      { x: 1, y: 1, z: -1, sides: ['px', 'nz'] }, { x: -1, y: 1, z: -1, sides: ['nx', 'nz'] }
+    ];
+    var cornersDone = cornerPositions.every(function (p) {
+      var c = getCubieAt(p.x, p.y, p.z);
+      return c.stickers.py === upColor && p.sides.every(function (s) { return c.stickers[s] === centerColor(s); });
+    });
+
+    if (!cornersDone) {
+      return {
+        stage: 'White Corners (F2L setup)',
+        text: 'Cross is complete. Now solve the four white corner pieces into the U layer, completing the first layer. ' +
+          "Use the sequence R U R' U' repeatedly (the 'sexy move') to cycle a corner from the top layer into its slot " +
+          'once it is positioned above its target location.'
+      };
+    }
+
+    // F2L: check the 4 middle-layer edges (y=0) are correctly placed/oriented
+    var midEdges = [
+      { x: 1, y: 0, z: 1, sides: ['px', 'pz'] }, { x: -1, y: 0, z: 1, sides: ['nx', 'pz'] },
+      { x: 1, y: 0, z: -1, sides: ['px', 'nz'] }, { x: -1, y: 0, z: -1, sides: ['nx', 'nz'] }
+    ];
+    var f2lDone = midEdges.every(function (p) {
+      var c = getCubieAt(p.x, p.y, p.z);
+      return p.sides.every(function (s) { return c.stickers[s] === centerColor(s); });
+    });
+
+    if (!f2lDone) {
+      return {
+        stage: 'F2L (First Two Layers)',
+        text: 'First layer is complete. Pair up each middle-layer edge with its corresponding corner and insert them ' +
+          "together into the middle layer slots. Try the basic insert: U R U' R' (or U' F' U F for the mirrored slot) " +
+          'after lining the pair up above its empty slot.'
+      };
+    }
+
+    // Yellow cross: check 4 edges on D face have matching down-facing color
+    var yEdgePositions = [
+      { x: 0, y: -1, z: 1 }, { x: 0, y: -1, z: -1 }, { x: 1, y: -1, z: 0 }, { x: -1, y: -1, z: 0 }
+    ];
+    var yellowCrossDone = yEdgePositions.every(function (p) {
+      var c = getCubieAt(p.x, p.y, p.z);
+      return c.stickers.ny === downColor;
+    });
+
+    if (!yellowCrossDone) {
+      return {
+        stage: 'Yellow Cross (OLL stage 1)',
+        text: 'First two layers are solved. Flip the cube to work on the D (yellow) face and form a yellow cross using ' +
+          "F R U R' U' F' repeatedly depending on your current dot/line/L-shape pattern."
+      };
+    }
+
+    // OLL: all last-layer (y=-1) stickers on ny face must be downColor AND all side stickers on the last layer
+    // row need not match yet (that's PLL) but corners must be oriented (their ny-facing sticker check doesn't
+    // apply to corners directly since corners don't have ny in this simple axis scheme the same way) --
+    // check corner's down-facing sticker equals downColor for orientation.
+    var yCornerPositions = [
+      { x: 1, y: -1, z: 1 }, { x: -1, y: -1, z: 1 }, { x: 1, y: -1, z: -1 }, { x: -1, y: -1, z: -1 }
+    ];
+    var ollDone = yCornerPositions.every(function (p) {
+      var c = getCubieAt(p.x, p.y, p.z);
+      return c.stickers.ny === downColor;
+    });
+
+    if (!ollDone) {
+      return {
+        stage: 'OLL (Orient Last Layer)',
+        text: 'Yellow cross is done. Now orient the last layer corners so the entire D face is one color. If you see the ' +
+          "Sune pattern (one corner oriented), apply: R U R' U R U2 R'. Use Anti-Sune for the mirrored case."
+      };
+    }
+
+    // PLL: check side stickers of last layer row match their center colors (permutation)
+    var pllPositions = [
+      { x: 1, y: -1, z: 1, sides: ['px', 'pz'] }, { x: -1, y: -1, z: 1, sides: ['nx', 'pz'] },
+      { x: 1, y: -1, z: -1, sides: ['px', 'nz'] }, { x: -1, y: -1, z: -1, sides: ['nx', 'nz'] },
+      { x: 0, y: -1, z: 1, sides: ['pz'] }, { x: 0, y: -1, z: -1, sides: ['nz'] },
+      { x: 1, y: -1, z: 0, sides: ['px'] }, { x: -1, y: -1, z: 0, sides: ['nx'] }
+    ];
+    var pllDone = pllPositions.every(function (p) {
+      var c = getCubieAt(p.x, p.y, p.z);
+      return p.sides.every(function (s) { return c.stickers[s] === centerColor(s); });
+    });
+
+    if (!pllDone) {
+      return {
+        stage: 'PLL (Permute Last Layer)',
+        text: 'Last layer is oriented (one solid color on top). Now permute the last-layer pieces into their correct ' +
+          "positions. If two adjacent edges/corners need swapping, try T-Perm: R U R' U' R' F R2 U' R' U' R U R' F'. " +
+          'For diagonal corner swaps with adjacent edge cycling, try Y-Perm.'
+      };
+    }
+
+    return { stage: 'Solved', text: 'The cube is fully solved. Great work!' };
+  }
+
+  document.getElementById('btn-hint').addEventListener('click', function () {
+    var result = analyzeCFOP();
+    var box = document.getElementById('hint-box');
+    box.innerHTML = '<span class="stage">' + escapeHtml(result.stage) + '</span>' + escapeHtml(result.text);
+  });
+
+  /* ============================================================
+     RENDER LOOP
+     ============================================================ */
+  function tick() {
+    controls.update();
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+  resize();
+  tick();
+})();
+</script>
+</body>
+</html>
