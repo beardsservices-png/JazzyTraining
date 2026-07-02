@@ -207,6 +207,22 @@
     50% { transform: scale(1.06); }
   }
 
+  #front-indicator {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #front-swatch {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+  #front-name { color: #fff; font-weight: 700; text-transform: uppercase; }
+
   .hotkey-hint { color: var(--dim); font-size: 10px; margin-top: 4px; line-height:1.4; }
   kbd {
     background: #232833; border: 1px solid var(--border); border-radius: 3px;
@@ -241,11 +257,12 @@
 <div id="app">
   <div id="sidebar">
     <h1>RUBIK'S CUBE // three.js</h1>
-    <div class="subtitle">drag canvas to orbit &middot; click to move</div>
+    <div class="subtitle">drag to spin the cube &middot; the face toward you is F</div>
 
     <section>
       <h2>Moves</h2>
       <div class="move-grid" id="move-grid"></div>
+      <div id="front-indicator">front (F): <span id="front-swatch"></span><span id="front-name"></span></div>
       <div class="hotkey-hint">
         keys: <kbd>U</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>B</kbd> <kbd>L</kbd> <kbd>R</kbd> = CW,
         + <kbd>Shift</kbd> = prime, + <kbd>2</kbd> = double
@@ -508,32 +525,76 @@
     return { face: face, times: times, label: token };
   }
 
+  /* ------------------------------------------------------------
+     VIEWER-RELATIVE NOTATION
+     The letters follow the user's viewpoint, like holding a real
+     cube: whichever face is toward the camera is F, its left is L,
+     its right is R. U/D stay locked to top/bottom. Orbiting the
+     view = "turning the whole cube" in tutorial-speak. Tokens are
+     resolved to fixed world faces at the moment they are queued,
+     so a whole algorithm stays consistent even if the camera moves
+     while it plays back.
+     ------------------------------------------------------------ */
+  var WORLD_FACE_FOR_AXIS = { '+z': 'F', '-z': 'B', '+x': 'R', '-x': 'L' };
+  var RIGHT_OF = { '+z': '+x', '+x': '-z', '-z': '-x', '-x': '+z' };
+  var OPPOSITE = { '+z': '-z', '-z': '+z', '+x': '-x', '-x': '+x' };
+
+  function frontAxisFromCamera() {
+    var px = camera.position.x, pz = camera.position.z;
+    if (Math.abs(px) > Math.abs(pz)) return px > 0 ? '+x' : '-x';
+    return pz > 0 ? '+z' : '-z';
+  }
+
+  function viewLetterMap() {
+    var front = frontAxisFromCamera();
+    return {
+      U: 'U', D: 'D',
+      F: WORLD_FACE_FOR_AXIS[front],
+      B: WORLD_FACE_FOR_AXIS[OPPOSITE[front]],
+      R: WORLD_FACE_FOR_AXIS[RIGHT_OF[front]],
+      L: WORLD_FACE_FOR_AXIS[OPPOSITE[RIGHT_OF[front]]]
+    };
+  }
+
+  function resolveToken(token) {
+    var map = viewLetterMap();
+    var face = token[0];
+    return (map[face] || face) + token.slice(1);
+  }
+
+  // Queue entries carry both the resolved world move (what to rotate)
+  // and the label the user pressed (what to show in the history log).
   function queueMove(token) {
-    moveQueue.push(token);
+    moveQueue.push({ world: resolveToken(token), label: token });
     processQueue();
   }
   function queueMoves(tokens) {
-    tokens.forEach(function (t) { moveQueue.push(t); });
+    var map = viewLetterMap();
+    tokens.forEach(function (t) {
+      moveQueue.push({ world: (map[t[0]] || t[0]) + t.slice(1), label: t });
+    });
     processQueue();
   }
 
   function processQueue() {
     if (animating || moveQueue.length === 0) return;
-    var token = moveQueue.shift();
+    var item = moveQueue.shift();
     animating = true;
-    performMove(token, function () {
+    performMove(item, function () {
       animating = false;
       processQueue();
     });
   }
 
-  function performMove(token, callback, recordHistory) {
+  function performMove(item, callback, recordHistory) {
     if (recordHistory === undefined) recordHistory = true;
+    var token = typeof item === 'string' ? item : item.world;
+    var label = typeof item === 'string' ? item : item.label;
     var m = parseMove(token);
     var def = MOVE_DEFS[m.face];
     if (!def) { if (callback) callback(); return; }
 
-    if (recordHistory) history.push({ move: token, snapshotBefore: snapshotState() });
+    if (recordHistory) history.push({ move: label, snapshotBefore: snapshotState() });
 
     var layerCubies = selectLayer(def.axis, def.layer);
     var quarterTurns = (m.times === 2) ? 2 : m.times; // 1, -1, or 2
@@ -1057,6 +1118,24 @@
       });
     });
   })();
+
+  /* ============================================================
+     FRONT-FACE INDICATOR
+     Shows which color is currently "F" as the user orbits.
+     ============================================================ */
+  var frontSwatchEl = document.getElementById('front-swatch');
+  var frontNameEl = document.getElementById('front-name');
+  var lastFrontLetter = null;
+  function updateFrontIndicator() {
+    var worldLetter = viewLetterMap().F;
+    if (worldLetter === lastFrontLetter) return;
+    lastFrontLetter = worldLetter;
+    var colorName = FACE_COLOR[worldLetter];
+    frontSwatchEl.style.background = '#' + COLORS[colorName].toString(16).padStart(6, '0');
+    frontNameEl.textContent = colorName;
+  }
+  controls.addEventListener('change', updateFrontIndicator);
+  updateFrontIndicator();
 
   /* ============================================================
      RENDER LOOP
